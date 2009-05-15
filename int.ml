@@ -1,42 +1,48 @@
 open Types
 open Math
 
+(* ray-plane intersection *)
+let int_plane ?(cull=true) (n,d) (o,r) =
+	let v = dot n r in
+	if fzero v then None else
+	if cull && v > 0. then None else
+	let t = -. (d +. (dot n o)) /. v in
+	if t < 0. then None else
+	let p = o +^ r *^ t in
+	Some (p, n)
+
+(* sphere bounding-volume *)
+let sphere_vol (c,rad) (o,d) =
+	let o = o -^ c in
+	let l = dot o o in
+	let rr = rad *. rad in
+	if l < rr then true else
+	let tca = -. (dot o d) in
+	if tca < 0. then false else
+	let t2hc = rr -. l +. (tca *. tca) in
+	if t2hc <= 0. then false
+	else true
+
 (* ray-sphere intersection *)
-let int_sphere ?(cull=true) rad ray =
-	let o, d = ray in
+let int_sphere ?(cull=true) (c,rad) (o,d) =
 	(* find closest-apprach distance *)
-	let l = mag o in
-	let i = l < rad in
+	let o = o -^ c in
+	let l = dot o o in
+	let rr = rad *. rad in
+	let i = l < rr in
 	if i && cull then None else
 	(* if pointing away, ray misses *)
 	let tca = -. (dot o d) in
 	if not i && (fneg tca) then None else
 	(* if dist > radius, ray misses *)
-	let t2hc = (rad ** 2.) -. (l ** 2.) +. (tca ** 2.) in
+	let t2hc = rr -. l +. (tca *. tca) in
 	if not i && (not (fpos t2hc)) then None else
 	(* find both intersection points *)
 	let thc = sqrt t2hc in
 	let t1 = tca +. thc in
 	let t2 = tca -. thc in
-	(* find nearest positive point and return *)
-	let t = (if t1 < 0. then t2 else t1) in
-	Some t
-
-(* ray-triangle intersection *)
-let int_tri ?(cull=true) v0 v1 v2 n ray =
-	let o, d = ray in
-	(* get edge vectors and normalized distance *)
-	let e1, e2 = v1 -^ v0, v2 -^ v0 in
-	let l = stp e1 d e2 in
-	if fzero l || (cull && l < 0.) then None else
-	(* get u coordinate *)
-	let r = o -^ v0 in
-	let u = stp r d e2 in
-	if u < 0. || u > l then None else
-	(* get v coordinate *)
-	let q = r ^^ e1 in
-	let v = dot d q in
-	if v < 0. || u +. v > l then None else
-	(* get t and return *)
-	let t = (dot e2 q) /. l in
-	Some t
+	(* find nearest point and surface normal *)
+	let t = if t1 < 0. then t2 else t1 in
+	let p = o +^ d *^ t in
+	let n = p /^ rad in
+	Some (p, n)

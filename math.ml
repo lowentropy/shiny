@@ -75,4 +75,4 @@ let dir v =
 	if fzero m then v else v /^ m
 
 (* reflection about normal *)
-let reflect v n = n *^ 2. -^ v
+let reflect v n = v -^ n *^ (2. *. (dot v n))

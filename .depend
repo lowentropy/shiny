@@ -1,6 +1,8 @@
+draw.cmo: math.cmo 
+draw.cmx: math.cmx 
 int.cmo: types.cmo math.cmo 
 int.cmx: types.cmx math.cmx 
 math.cmo: types.cmo 
 math.cmx: types.cmx 
-shiny.cmo: types.cmo math.cmo 
-shiny.cmx: types.cmx math.cmx 
+shiny.cmo: types.cmo math.cmo int.cmo draw.cmo 
+shiny.cmx: types.cmx math.cmx int.cmx draw.cmx 

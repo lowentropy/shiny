@@ -1,3 +1,4 @@
 shiny
 *.o
 *.cm[iox]
+*.swp

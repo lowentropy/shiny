@@ -4,15 +4,16 @@ OCAMLDEP=ocamldep
 OCAMLLEX=ocamllex
 OCAMLYACC=ocamlyacc
 INCLUDES=
-OCAMLFLAGS=$(INCLUDES)# -rectypes
+OCAMLFLAGS=$(INCLUDES) -rectypes
 PROGRAM=shiny
 TESTS=
 
 # The list of object files for 
-CMXS=types.cmx math.cmx int.cmx
-CMOS=types.cmo math.cmo int.cmo
+CMXS=types.cmx math.cmx draw.cmx int.cmx
+CMOS=types.cmo math.cmo draw.cmo int.cmo
 
 all: opt
+again: clean all
 com: $(CMOS) $(PROGRAM).cmo
 	$(OCAMLC) $(OCAMLFLAGS) -o $(PROGRAM) graphics.cma $(CMOS) $(PROGRAM).cmo
 opt: $(CMXS) $(PROGRAM).cmx
