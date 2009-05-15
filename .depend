@@ -1,0 +1,6 @@
+int.cmo: types.cmo math.cmo 
+int.cmx: types.cmx math.cmx 
+math.cmo: types.cmo 
+math.cmx: types.cmx 
+shiny.cmo: types.cmo math.cmo 
+shiny.cmx: types.cmx math.cmx 
