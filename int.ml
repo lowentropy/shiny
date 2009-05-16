@@ -1,6 +1,12 @@
 open Types
 open Math
 
+let plane_vol (n,d) (o,r) =
+	let v = dot n r in
+	if fzero v then false else
+	let t = -. (d +. (dot n o)) /. v in
+	if t < 0. then false else true
+
 (* ray-plane intersection *)
 let int_plane ?(cull=true) (n,d) (o,r) =
 	let v = dot n r in

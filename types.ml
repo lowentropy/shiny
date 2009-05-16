@@ -13,8 +13,8 @@ type ray = vec * vec
 (* triangle: vectors 1, 2, 3 *)
 type tri = vec * vec * vec
 
-(* camera: position, field-of-view x, y *)
-type cam = vec * float * float
+(* camera: location, facing, up, field-of-view x, y *)
+type cam = vec * vec * vec * float * float
 
 (* reflectance function: light direction -> multiplier *)
 type refl = vec -> vec
@@ -45,6 +45,12 @@ type aabb = vec * vec
 
 (* plane: normal, D-value *)
 type plane = vec * float 
+
+(* light: location, color *)
+type light = vec * vec
+
+(* scene: objects, lights, camera *)
+type scene = obj list * light list * cam
 
 
 exception IllegalAxis

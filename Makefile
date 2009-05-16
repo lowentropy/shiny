@@ -9,8 +9,8 @@ PROGRAM=shiny
 TESTS=
 
 # The list of object files for 
-CMXS=types.cmx math.cmx draw.cmx int.cmx
-CMOS=types.cmo math.cmo draw.cmo int.cmo
+CMXS=types.cmx math.cmx trace.cmx shaders.cmx draw.cmx int.cmx
+CMOS=types.cmo math.cmo trace.cmo shaders.cmo draw.cmo int.cmo
 
 all: opt
 again: clean all

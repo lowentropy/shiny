@@ -4,5 +4,9 @@ int.cmo: types.cmo math.cmo
 int.cmx: types.cmx math.cmx 
 math.cmo: types.cmo 
 math.cmx: types.cmx 
-shiny.cmo: types.cmo math.cmo int.cmo draw.cmo 
-shiny.cmx: types.cmx math.cmx int.cmx draw.cmx 
+shaders.cmo: types.cmo math.cmo 
+shaders.cmx: types.cmx math.cmx 
+shiny.cmo: types.cmo trace.cmo shaders.cmo math.cmo int.cmo draw.cmo 
+shiny.cmx: types.cmx trace.cmx shaders.cmx math.cmx int.cmx draw.cmx 
+trace.cmo: types.cmo math.cmo 
+trace.cmx: types.cmx math.cmx 

@@ -74,5 +74,5 @@ let dir v =
 	let m = mag v in
 	if fzero m then v else v /^ m
 
-(* reflection about normal *)
+(* reflection about normal: v towards surface *)
 let reflect v n = v -^ n *^ (2. *. (dot v n))
