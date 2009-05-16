@@ -9,8 +9,20 @@ let shoot cam x y =
 	let v = d +^ r *^ (sin ax) +^ u *^ (sin ay) in
 	(c, dir v)
 
-let trace ray objects lights importance =
-	(0.,0.,0.)
+let refl_of (obj:obj) =
+	let _, (refl, _), _ = obj in refl
+
+let intersect (o,d) objects =
+	None
+
+let trace (o,d) objects lights importance =
+	match intersect (o,d) objects with
+		None -> zv | Some (obj, (t,n,p)) ->
+	let refl = (refl_of obj) (t,n,p) d in
+	let direct = vsum (List.map (fun (loc,color) ->
+		let l = dir (loc -^ p) in
+		vmap2 color (refl l) ( *. )) lights) in
+	direct
 
 let draw_scene scene w h x y =
 	let objects, lights, camera = scene in

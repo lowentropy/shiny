@@ -16,14 +16,14 @@ type tri = vec * vec * vec
 (* camera: location, facing, up, field-of-view x, y *)
 type cam = vec * vec * vec * float * float
 
-(* reflectance function: light direction -> multiplier *)
-type refl = vec -> vec
+(* hit point: distance, normal, point *)
+type hit = float * vec * vec
 
-(* hit point: location, normal, reflection *)
-type hit = vec * vec * refl
+(* reflectance function: hit point -> eye ray -> light direction -> multiplier *)
+type refl = hit -> vec -> vec -> vec
 
-(* intersection function: ray -> point, normal *)
-type ifun = ray -> (vec * vec) option 
+(* intersection function: ray -> hit option *)
+type ifun = ray -> hit option 
 
 (* physical properties: refraction index, has-thickness, absorption *)
 type phys = float * bool * vec
@@ -32,7 +32,7 @@ type phys = float * bool * vec
 type bvol = ray -> bool
 
 (* surface properties: incoming ray -> hit point *)
-type surf = ray -> hit option
+type surf = refl * ifun
 
 (* object: bounding volume, surface and interior properties *)
 type obj = bvol * surf * phys

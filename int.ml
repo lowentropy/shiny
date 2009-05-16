@@ -14,8 +14,7 @@ let int_plane ?(cull=true) (n,d) (o,r) =
 	if cull && v > 0. then None else
 	let t = -. (d +. (dot n o)) /. v in
 	if t < 0. then None else
-	let p = o +^ r *^ t in
-	Some (p, n)
+	Some (t, n, ray_at (o,r) t)
 
 (* sphere bounding-volume *)
 let sphere_vol (c,rad) (o,d) =
@@ -49,6 +48,6 @@ let int_sphere ?(cull=true) (c,rad) (o,d) =
 	let t2 = tca -. thc in
 	(* find nearest point and surface normal *)
 	let t = if t1 < 0. then t2 else t1 in
-	let p = o +^ d *^ t in
+	let p = ray_at (o,d) t in
 	let n = p /^ rad in
-	Some (p, n)
+	Some (t, n, p)

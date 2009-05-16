@@ -76,3 +76,7 @@ let dir v =
 
 (* reflection about normal: v towards surface *)
 let reflect v n = v -^ n *^ (2. *. (dot v n))
+
+(* miscellaneous *)
+let vsum lst = List.fold_left (+^) zv lst
+let ray_at (o,d) t = o +^ d *^ t
