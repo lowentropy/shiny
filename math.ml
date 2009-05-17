@@ -15,7 +15,7 @@ let fmax a b = if a > b then a else b
 (* vector mapping *)
 let vmap (x,y,z) f = (f x, f y, f z)
 let vmap2 (a,b,c) (d,e,g) f = (f a d, f b e, f c g)
-let vsum (x,y,z) = x +. y +. z
+let vtot (x,y,z) = x +. y +. z
 
 (* vector member access *)
 let vx (x,y,z) = x
@@ -42,7 +42,7 @@ let ( +^) a b = vmap2 a b (+.)
 let ( -^) a b = vmap2 a b (-.)
 let ( *^) v s = vmap v (( *.) s)
 let ( /^) v s = v *^ (1. /. s)
-let dot a b = vsum (vmap2 a b ( *.))
+let dot a b = vtot (vmap2 a b ( *.))
 let dotp a b = fmax 0.0 (dot a b)
 let ( ^^) (a,b,c) (d,e,f) =
 	(b *. f -. c *. e,
