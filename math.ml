@@ -9,6 +9,8 @@ let fabs f = if f < 0. then -.f else f
 let fzero f = (fabs f) < ftol
 let fneg f = not (f > 0. || (fzero f))
 let fpos f = not (f < 0. || (fzero f))
+let fmin a b = if a < b then a else b
+let fmax a b = if a > b then a else b
 
 (* vector mapping *)
 let vmap (x,y,z) f = (f x, f y, f z)
@@ -41,6 +43,7 @@ let ( -^) a b = vmap2 a b (-.)
 let ( *^) v s = vmap v (( *.) s)
 let ( /^) v s = v *^ (1. /. s)
 let dot a b = vsum (vmap2 a b ( *.))
+let dotp a b = fmax 0.0 (dot a b)
 let ( ^^) (a,b,c) (d,e,f) =
 	(b *. f -. c *. e,
 	 c *. d -. a *. f,
@@ -65,11 +68,10 @@ let det m =
 	aa *. (bb *. cc -. bc *. cb) -.
 	ab *. (ba *. cc -. bc *. ca) +.
 	ac *. (ba *. cb -. bb *. ca)
-
 let singular m = fzero (det m)
 
 (* more vector math *)
-let mag v = dot v v
+let mag v = sqrt (dot v v)
 let dir v = 
 	let m = mag v in
 	if fzero m then v else v /^ m
@@ -80,3 +82,8 @@ let reflect v n = v -^ n *^ (2. *. (dot v n))
 (* miscellaneous *)
 let vsum lst = List.fold_left (+^) zv lst
 let ray_at (o,d) t = o +^ d *^ t
+let lift o d = (ray_at (o,d) ftol), d
+let pi = 3.14159265358979323
+let twopi = pi *. 2.
+let d2r d = d *. pi /. 180.
+let r2d r = r *. 180. /. pi
