@@ -25,17 +25,23 @@ type refl = hit -> vec -> vec -> vec
 (* intersection function: ray -> hit option *)
 type ifun = ray -> hit option 
 
-(* physical properties: refraction index, has-thickness, absorption *)
-type phys = float * bool * vec
-
 (* bounding volume function: incoming ray -> intersects *)
 type bvol = ray -> bool
 
-(* surface properties: incoming ray -> hit point *)
-type surf = refl * ifun
+(* surface properties: diffusivity, specularity, reflectivity, refractivity *)
+type surf = float * float * float * float
 
-(* object: bounding volume, surface and interior properties *)
-type obj = bvol * surf * phys
+(* physical properties: refraction index, has-thickness, absorption *)
+type phys = float * bool * vec
+
+(* material properties: ambient, diffuse, specular *)
+type material = color * color * color
+
+(* shape: bounding volume, intersection function *)
+type shape = bvol * ifun
+
+(* object: shape, surface properties, physics *)
+type obj = shape * surf * phys
 
 (* sphere: location, radius *)
 type sphere = vec * float
@@ -46,8 +52,11 @@ type aabb = vec * vec
 (* plane: normal, D-value *)
 type plane = vec * float 
 
-(* light: location, color *)
-type light = vec * vec
+(* light function: num samples -> index -> point *)
+type lfun = int -> int -> vec
+
+(* light: point selector, shape, color *)
+type light = lfun * shape * color
 
 (* scene: objects, lights, camera *)
 type scene = obj list * light list * cam
