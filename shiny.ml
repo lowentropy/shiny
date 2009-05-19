@@ -1,31 +1,30 @@
+open Graphics
 open Types
 open Math
 open Draw
-open Graphics
 open Int
 open Shaders
 open Trace
 
-let red = diffuse (1.,0.,0.)
-let blue = diffuse (0.,0.,1.)
-let gray = diffuse (0.7,0.7,0.7)
+let hollow = (0.0, false, zv)
 
-let shiny = phong (0.,0.,0.5) (0.5,0.5,0.5) 30.0
+let plane1 = (0.0, 1.0, 0.0), 4.4
+let sphere1 = (1.0, -0.8, 3.0), 2.5
+let sphere2 = (-5.5, -0.5, 7.0), 2.0
+let light1 = (0.0, 5.0, 5.0), (0.6, 0.6, 0.6)
+let light2 = (2.0, 5.0, 1.0), (0.7, 0.7, 0.9)
 
-let sphere = ((0.,1.0,0.),1.)
-let vol1 = sphere_vol sphere
-let surf1 = shiny, int_sphere sphere
-let phys = (0.0, false, zv)
-let sphere_obj = (vol1, surf1, phys)
+let p1mat = diffuse (0.4, 0.3, 0.3)
+let s1mat = phong 1.0 (0.7,0.7,0.7) 0.6 white 20.0
+let s2mat = phong 0.1 (0.7,0.7,0.1) 1.0 white 20.0
 
-let vol2 = plane_vol ground
-let surf2 = gray, int_plane ground
-let plane_obj = (vol2, surf2, phys)
+let p1obj = (plane_vol plane1, (p1mat, int_plane plane1), hollow)
+let s1obj = (sphere_vol sphere1, (s1mat, int_sphere sphere1), hollow)
+let s2obj = (sphere_vol sphere2, (s2mat, int_sphere sphere2), hollow)
 
-let cam = ((0.,1.,3.), (dir (0.,0.,-1.)), (0.,1.,0.), d2r 90., d2r 90.)
-let light1 = (-5.,7.,10.), (1.,1.,1.)
-let light2 = ( 3.,1.,5.), (1.,1.,1.)
-let scene = [sphere_obj; plane_obj], [light1; light2], cam
+let cam = ((0.,0.,-5.), (dir (0.,0.,1.)), (0.,1.,0.), d2r 90., d2r 90.)
+
+let scene = [p1obj; s1obj; s2obj], [light1; light2], cam
 
 ;;
 

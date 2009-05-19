@@ -35,16 +35,22 @@ let hits_before ray objects dist =
 		  | Some (t,_,_) -> t < dist
 		) objects
 
-let trace (o,d) objects lights importance =
+let rec trace (o,d) objects lights importance =
 	match intersect (o,d) objects with
 		None -> zv | Some (obj, (t,n,p)) ->
 	let refl = (refl_of obj) (t,n,p) d in
 	let direct = vsum (List.map (fun (loc,color) ->
 		let s = loc -^ p in
 		let l = dir s in
-		if hits_before (lift p l) objects (mag s) then zv else
-		vmap2 color (refl l) ( *. )) lights) in
-	direct
+		let r = mag s in
+		if hits_before (lift p l) objects r then zv else
+		(vmap2 color (refl l) ( *. ))) lights) in
+	if importance < 0.1 then direct else
+	let scale = (vtot direct) /. 3. in
+	let importance = importance *. (fmin 0.5 scale) in
+	let ray = lift p (reflect d n) in
+	let indirect = trace ray objects lights importance in
+	direct +^ indirect
 
 let draw_scene scene w h x y =
 	let objects, lights, camera = scene in
