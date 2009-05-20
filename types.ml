@@ -2,7 +2,7 @@
 type vec = float * float * float
 
 (* matrix: rows 1, 2, 3 *)
-type mat = vec * vec * vec
+type matrix = vec * vec * vec
 
 (* color: red, green, blue *)
 type color = vec
@@ -11,37 +11,34 @@ type color = vec
 type ray = vec * vec
 
 (* triangle: vectors 1, 2, 3 *)
-type tri = vec * vec * vec
+type triangle = vec * vec * vec
 
 (* camera: location, facing, up, field-of-view x, y *)
-type cam = vec * vec * vec * float * float
+type camera = vec * vec * vec * float * float
 
 (* hit point: distance, normal, point *)
 type hit = float * vec * vec
 
-(* reflectance function: hit point -> eye ray -> light direction -> multiplier *)
-type refl = hit -> vec -> vec -> vec
-
 (* intersection function: ray -> hit option *)
-type ifun = ray -> hit option 
+type intersect = ray -> hit option 
 
 (* bounding volume function: incoming ray -> intersects *)
-type bvol = ray -> bool
+type bound = ray -> bool
 
-(* surface properties: diffusivity, specularity, reflectivity, refractivity *)
-type surf = float * float * float * float
+(* surface properties: diffusivity, specularity, shininess, reflectivity, refractivity *)
+type surface = float * float * float * float * float
 
-(* physical properties: refraction index, has-thickness, absorption *)
-type phys = float * bool * vec
+(* physical properties: refraction index, absorption *)
+type physics = float * color
 
 (* material properties: ambient, diffuse, specular *)
 type material = color * color * color
 
 (* shape: bounding volume, intersection function *)
-type shape = bvol * ifun
+type shape = bound * intersect
 
 (* object: shape, surface properties, physics *)
-type obj = shape * surf * phys
+type obj = shape * surface * material * physics option
 
 (* sphere: location, radius *)
 type sphere = vec * float
@@ -52,26 +49,23 @@ type aabb = vec * vec
 (* plane: normal, D-value *)
 type plane = vec * float 
 
-(* light function: num samples -> index -> point *)
-type lfun = int -> int -> vec
+(* surface sampler: num samples -> point list *)
+type sampler = int -> vec list
 
-(* light: point selector, shape, color *)
-type light = lfun * shape * color
+(* light: shape, surface sampler, color *)
+type light = shape * sampler * color
 
-(* scene: objects, lights, camera *)
-type scene = obj list * light list * cam
+(* entity: either an object or a light *)
+type entity = Object of obj | Light of light
+
+(* scene: camera, entities *)
+type scene = camera * entity list
 
 
 exception IllegalAxis
 
-let zv = (0., 0., 0.)
-let zm = (zv, zv, zv)
 
-let up = (0., 1., 0.)
-let ground = up, 0.
-
-let red =   (1.0, 0.0, 0.0)
-let green = (0.0, 1.0, 0.0)
-let blue =  (0.0, 0.0, 1.0)
-let gray v = (v, v, v)
-let white = gray 1.0
+let shape_of entity =
+	match entity with
+		Object (s,_,_,_) -> s
+	  | Light (s,_,_) -> s

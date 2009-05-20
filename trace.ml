@@ -1,5 +1,8 @@
 open Types
 open Math
+open Consts
+open Shaders
+open Format
 open Pp
 
 let shoot cam x y =
@@ -13,48 +16,82 @@ let shoot cam x y =
 	let v = d +^ (r *^ dx) +^ (u *^ dy) in
 	(c, dir v)
 
-let refl_of (obj:obj) =
-	let _, (refl, _), _ = obj in refl
-
-let intersect ray objects =
-	List.fold_left (fun near obj ->
-		let vol, (_,ifun), _ = obj in
-		if not (vol ray) then near else
-		match near, ifun ray with
+let intersect ray entities =
+	List.fold_left (fun near ent ->
+		let shape = shape_of ent in
+		let bound, intersect = shape in
+		if not (bound ray) then near else
+		match near, intersect ray with
 			_, None -> near
-		  | None, Some (t,n,p) -> Some (obj, (t,n,p))
+		  | None, Some (t,n,p) -> Some (ent, (t,n,p))
 		  | Some (_,(u,_,_)), Some (t,n,p) ->
-		  		if u < t then near else Some (obj, (t,n,p))
-		) None objects
+		  		if u < t then near else Some (ent, (t,n,p))
+		) None entities
 
-let hits_before ray objects dist =
-	List.exists (fun obj ->
-		let _, (_,ifun), _ = obj in
-		match ifun ray with
+let hits_before ray entities dist =
+	List.exists (fun ent ->
+		let shape = shape_of ent in
+		let bound, intersect = shape in
+		if not (bound ray) then false else
+		match intersect ray with
 			None -> false
 		  | Some (t,_,_) -> t < dist
-		) objects
+		) entities
 
-let rec trace (o,d) objects lights importance =
-	match intersect (o,d) objects with
-		None -> zv | Some (obj, (t,n,p)) ->
-	let refl = (refl_of obj) (t,n,p) d in
-	let direct = vsum (List.map (fun (loc,color) ->
-		let s = loc -^ p in
-		let l = dir s in
-		let r = mag s in
-		if hits_before (lift p l) objects r then zv else
-		(vmap2 color (refl l) ( *. ))) lights) in
-	if importance < 0.1 then direct else
-	let scale = (vtot direct) /. 3. in
-	let importance = importance *. (fmin 0.5 scale) in
-	let ray = lift p (reflect d n) in
-	let indirect = trace ray objects lights importance in
-	direct +^ indirect
+let lights entities =
+	List.fold_left (fun lights ent ->
+		match ent with
+			Light l -> l::lights
+		  | _ -> lights) [] entities
 
-let draw_scene scene w h x y =
-	let objects, lights, camera = scene in
-	let px = (float x) /. (float (w - 1)) in
-	let py = (float y) /. (float (h - 1)) in
+let direct_light p n e entities samples surface material =
+	let (ambient, _, _) = material in
+	List.fold_left (fun sum (_,sample,color) ->
+		let samples = sample samples in
+		let num = List.length samples in
+		let sampled = List.fold_left (fun total point ->
+			let diff = point -^ p in
+			let dist = mag diff in
+			let dir = diff /^ dist in
+			let ray = lift p dir in
+			if hits_before ray entities dist then black else
+			let mult = phong surface material n e dir in
+			total +^ (combine color mult)
+		) black samples in
+		sum +^ (sampled /^ (float num))
+	) ambient (lights entities)
+
+let rec trace ray entities n1 importance =
+	match intersect ray entities with
+		None -> zv | Some (ent, (t,n,p)) ->
+	let o, d = ray in
+	match ent with
+		Light (_, _, color) -> color
+	  | Object (_, surface, material, physics) ->
+	let kd, ks, _, kr1, kr2 = surface in
+	let direct = if ((kd > 0.) || (ks > 0.))
+		then direct_light p n (zv-^d) entities 9 surface material
+		else black in
+	let refracted = (
+		match physics with
+			None -> black
+		  |	Some (n2, absorb) ->
+		let importance = kr2 *. importance in
+		if importance < 0.2 then black else
+		black (* TODO: refraction*)) in
+	let reflected = (
+		let importance = kr1 *. importance in
+		if importance < 0.2 then black else
+		let ray = lift p (reflect d n) in
+		let color = trace ray entities n1 (importance *. kr1) in
+		color *^ kr1) in
+	direct +^ refracted +^ reflected
+
+let jitter x j = x +. Random.float (j *. 2.) -. j
+
+let draw_scene ?(j=0.3) scene w h x y =
+	let camera, entities = scene in
+	let px = (jitter (float x) j) /. (float (w - 1)) in
+	let py = (jitter (float y) j) /. (float (h - 1)) in
 	let eye = shoot camera px py in
-	trace eye objects lights 1.0
+	trace eye entities 1.0 1.0

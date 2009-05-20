@@ -1,4 +1,5 @@
 open Types
+open Consts
 
 (* basic randomization *)
 let seed () = Random.self_init ()
@@ -87,3 +88,4 @@ let pi = 3.14159265358979323
 let twopi = pi *. 2.
 let d2r d = d *. pi /. 180.
 let r2d r = r *. 180. /. pi
+let combine a b = vmap2 a b ( *. )
