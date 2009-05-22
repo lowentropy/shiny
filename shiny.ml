@@ -33,7 +33,7 @@ let light = Light (
 	ghost,
 	(fun n -> n_of n (fun () ->
 		(Random.float 2.0 -. 1., 10.0, Random.float 2.0 -. 1.))),
-	white)
+	(gray 2.0))
 
 (* surfaces *)
 let p1_surf = (0.6, 0.0, 50.0, 0.0, 0.0)
@@ -55,7 +55,7 @@ let s2_obj = make_obj (make_sphere sphere2) s2_surf s2_mat None
 
 (* scene *)
 let cam = (camloc, dir camdir, (0.,1.,0.), d2r 90., d2r 90.)
-let scene = cam, [p1_obj; p2_obj; p3_obj; p4_obj; s1_obj; s2_obj; light]
+let scene = cam, [p1_obj; (*p2_obj; p3_obj; p4_obj;*) s1_obj; s2_obj; light]
 
 ;;
 

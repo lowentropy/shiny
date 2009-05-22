@@ -78,7 +78,7 @@ let rec trace ray entities n1 importance =
 	  | Object (_, surface, material, physics) ->
 	let kd, ks, _, kr1, kr2 = surface in
 	let direct = if ((kd > 0.) || (ks > 0.))
-		then direct_light p n (zv-^d) entities 9 surface material
+		then direct_light p n (zv-^d) entities 100 surface material
 		else black in
 	let refracted = (
 		match physics with
