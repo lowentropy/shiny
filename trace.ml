@@ -61,7 +61,7 @@ let direct_light p n e entities samples surface material =
 			let diff = point -^ p in
 			let dist = mag diff in
 			let dir = diff /^ dist in
-			let ray = jitter_ray (lift p dir) 0.05 in
+			let ray = jitter_ray (lift p dir) 0.001 in
 			if hits_before ray entities dist then black else
 			let mult = phong surface material n e dir in
 			total +^ (combine color mult)
@@ -97,7 +97,7 @@ let rec trace ray entities n1 importance =
 
 let jitter x j = x +. Random.float (j *. 2.) -. j
 
-let draw_scene ?(j=0.1) scene w h x y =
+let draw_scene ?(j=0.0) scene w h x y =
 	let camera, entities = scene in
 	let px = (jitter (float x) j) /. (float (w - 1)) in
 	let py = (jitter (float y) j) /. (float (h - 1)) in
