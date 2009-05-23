@@ -43,6 +43,9 @@ type obj = shape * surface * material * physics option
 (* sphere: location, radius *)
 type sphere = vec * float
 
+(* spherical lens: center, facing normal, radius, half-width *)
+type lens = vec * vec * float * float
+
 (* axis-aligned bounding box: minimum and maximum coords *)
 type aabb = vec * vec
 

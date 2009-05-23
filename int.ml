@@ -51,3 +51,23 @@ let int_sphere (c,rad) cull (o,d) =
 	let p = ray_at (o,d) t in
 	let n = p /^ rad in
 	Some (t, n, p +^ c)
+
+let lens_vol (c,n,r,l) (o,d) = sphere_vol (c,r) (o,d)
+
+let int_lens (c,n,r,l) cull (o,d) =
+	let rr = r *. r in
+	let f = n *^ (r -. l) in
+	let cr = c +^ f in
+	let cl = c -^ f in
+	let sr = cr, r in
+	let sl = cl, r in
+	let dr = o -^ cr in
+	let dl = o -^ cl in
+	let drdr = dot dr dr in
+	let dldl = dot dl dl in
+	if (dldl < rr) && (drdr < rr) then (
+		if cull then None else
+		let s = if (dot n d) > 0. then sl else sr in
+		int_sphere s false (o,d)) else
+	let s = if (dot (o -^ c) n) > 0. then sl else sr in
+	int_sphere s true (o,d)
