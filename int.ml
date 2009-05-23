@@ -8,7 +8,7 @@ let plane_vol (n,d) (o,r) =
 	if t < 0. then false else true
 
 (* ray-plane intersection *)
-let int_plane ?(cull=true) (n,d) (o,r) =
+let int_plane (n,d) cull (o,r) =
 	let v = dot n r in
 	if fzero v then None else
 	if cull && v > 0. then None else
@@ -29,7 +29,7 @@ let sphere_vol (c,rad) (o,d) =
 	else true
 
 (* ray-sphere intersection *)
-let int_sphere ?(cull=true) (c,rad) (o,d) =
+let int_sphere (c,rad) cull (o,d) =
 	(* find closest-apprach distance *)
 	let o = o -^ c in
 	let ll = dot o o in

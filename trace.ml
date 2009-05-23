@@ -21,7 +21,7 @@ let intersect ray entities =
 		let shape = shape_of ent in
 		let bound, intersect = shape in
 		if not (bound ray) then near else
-		match near, intersect ray with
+		match near, intersect true ray with
 			_, None -> near
 		  | None, Some (t,n,p) -> Some (ent, (t,n,p))
 		  | Some (_,(u,_,_)), Some (t,n,p) ->
@@ -33,7 +33,7 @@ let hits_before ray entities dist =
 		let shape = shape_of ent in
 		let bound, intersect = shape in
 		if not (bound ray) then false else
-		match intersect ray with
+		match intersect false ray with
 			None -> false
 		  | Some (t,_,_) -> t < dist
 		) entities
@@ -61,7 +61,7 @@ let direct_light p n e entities samples surface material =
 			let diff = point -^ p in
 			let dist = mag diff in
 			let dir = diff /^ dist in
-			let ray = jitter_ray (lift p dir) 0.001 in
+			let ray = jitter_ray (lift p dir) 0.0 in
 			if hits_before ray entities dist then black else
 			let mult = phong surface material n e dir in
 			total +^ (combine color mult)
@@ -69,29 +69,57 @@ let direct_light p n e entities samples surface material =
 		sum +^ (sampled /^ (float num))
 	) ambient (lights entities)
 
+let refract p n e n1 n2 =
+	let c1 = -. (dot n e) in
+	let r = n1 /. n2 in
+	let s = 1. -. r *. r *. (1. -. c1 *. c1) in
+	if s < 0. then None else
+	let c2 = sqrt s in
+	let c2 = if c1 > 0. then -. c2 else c2 in
+	let d = (e *^ r) +^ (n *^ (r *. c1 +. c2)) in
+	Some (lift p d)
+
 let rec trace ray entities n1 importance =
 	match intersect ray entities with
 		None -> zv | Some (ent, (t,n,p)) ->
 	let o, d = ray in
 	match ent with
 		Light (_, _, color) -> color
-	  | Object (_, surface, material, physics) ->
+	  | Object (shape, surface, material, physics) ->
 	let kd, ks, _, kr1, kr2 = surface in
 	let direct = if ((kd > 0.) || (ks > 0.))
 		then direct_light p n (zv-^d) entities 100 surface material
 		else black in
 	let refracted = (
+		(* grab internal physics *)
 		match physics with
 			None -> black
 		  |	Some (n2, absorb) ->
+		(* black if unimportant *)
 		let importance = kr2 *. importance in
 		if importance < 0.2 then black else
-		black (* TODO: refraction*)) in
+		(* refract from outer -> inner *)
+		match refract p n d n1 n2 with
+			None -> black (* total internal reflection *)
+		  | Some (o,d) ->
+		(* find ray exit point *)
+		let _, intersect = shape in
+		match intersect false (o,d) with
+			None -> raise FunkySolid
+		  | Some (t,n,p) ->
+		(* refract from inner -> outer *)
+		match refract p (zv-^n) d n2 n1 with
+			None -> black
+		  | Some ray ->
+		(* find next intersection *)
+		let color = trace ray entities n1 importance in
+		let mult = vmap absorb (fun x -> exp (-. t *. x)) in
+		(combine color mult) *^ kr2) in
 	let reflected = (
 		let importance = kr1 *. importance in
 		if importance < 0.2 then black else
 		let ray = lift p (reflect d n) in
-		let color = trace ray entities n1 (importance *. kr1) in
+		let color = trace ray entities n1 importance in
 		color *^ kr1) in
 	direct +^ refracted +^ reflected
 

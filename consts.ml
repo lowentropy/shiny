@@ -16,4 +16,4 @@ let black = gray 0.0
 let glass = (1.5, zv)
 let air = (1.0, zv)
 
-let ghost = (fun _ -> false), (fun _ -> None)
+let ghost = (fun _ -> false), (fun _ _ -> None)

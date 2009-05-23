@@ -19,8 +19,8 @@ type camera = vec * vec * vec * float * float
 (* hit point: distance, normal, point *)
 type hit = float * vec * vec
 
-(* intersection function: ray -> hit option *)
-type intersect = ray -> hit option 
+(* intersection function: cull -> ray -> hit option *)
+type intersect = bool -> ray -> hit option 
 
 (* bounding volume function: incoming ray -> intersects *)
 type bound = ray -> bool
@@ -63,6 +63,7 @@ type scene = camera * entity list
 
 
 exception IllegalAxis
+exception FunkySolid
 
 
 let shape_of entity =
