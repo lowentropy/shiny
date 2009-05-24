@@ -20,7 +20,7 @@ let intersect ray entities =
 	List.fold_left (fun near ent ->
 		let shape = shape_of ent in
 		let bound, intersect = shape in
-		if not (bound ray) then near else
+		if (not (bound ray)) then near else
 		match near, intersect true ray with
 			_, None -> near
 		  | None, Some (t,n,p) -> Some (ent, (t,n,p))
@@ -32,8 +32,8 @@ let hits_before ray entities dist =
 	List.exists (fun ent ->
 		let shape = shape_of ent in
 		let bound, intersect = shape in
-		if not (bound ray) then false else
-		match intersect false ray with
+		if (not (bound ray)) then false else
+		match intersect true ray with
 			None -> false
 		  | Some (t,_,_) -> t < dist
 		) entities
@@ -109,7 +109,7 @@ let rec trace ray entities n1 importance =
 		  | Some (t,n,p) ->
 		(* refract from inner -> outer *)
 		match refract p (zv-^n) d n2 n1 with
-			None -> black
+			None -> black (* total internal reflection *)
 		  | Some ray ->
 		(* find next intersection *)
 		let color = trace ray entities n1 importance in

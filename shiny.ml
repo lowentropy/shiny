@@ -22,7 +22,7 @@ let plane4  = (-1.0,  0.0,  0.0),  6.0
 let sphere1 = (-3.0,  4.0,  0.0),  2.0
 let sphere2 = ( 3.0,  4.0,  0.0),  2.0
 
-let lens1   = ( 0.0,  4.0,  5.0),  (0.0, 0.0, 1.0),  5.0,  0.1
+let lens1   = (-0.3,  3.5,  8.0),  (dir (0.0, -0.5, 1.0)),  15.0,  0.05
 
 let camloc  = ( 0.0,  4.0, 15.0)
 let camdir  = ( 0.0,  0.0, -1.0)
@@ -34,25 +34,26 @@ let rec n_of i f =
 	if i = 0 then [] else
 	(f ())::(n_of (i-1) f)
 
-(*
 let light = Light (
 	ghost,
 	(fun n -> n_of n (fun () ->
 		(Random.float 4.0 -. 2., 10.0, Random.float 4.0 -. 2.))),
 	(gray 2.0))
-*)
 
 (* surfaces *)
 let p1_surf = (0.6 , 0.0,  0.0, 0.0, 0.0)
 let s1_surf = (0.8 , 0.2, 10.0, 0.0, 0.0)
 let s2_surf = (0.05, 0.5, 50.0, 0.8, 0.0)
-let lens_surf = (0.05, 0.5, 50.0, 0.0, 0.8)
+let lens_surf = (0.0, 0.5, 50.0, 0.0, 0.8)
 
 (* materials *)
 let p1_mat = (black, gray 0.6, white)
-let s1_mat = (black, red, white)
+let s1_mat = (black, (1.0,0.5,0.5), white)
 let s2_mat = (black, white, white)
 let lens_mat = (black, white, white)
+
+(* physics *)
+let lens_phys = (1.5, (0.7,0.7,0.1) *^ 70.0)
 
 (* objects *)
 let p1_obj = make_obj (make_plane plane1)   p1_surf p1_mat None
@@ -61,11 +62,17 @@ let p3_obj = make_obj (make_plane plane3)   p1_surf p1_mat None
 let p4_obj = make_obj (make_plane plane4)   p1_surf p1_mat None
 let s1_obj = make_obj (make_sphere sphere1) s1_surf s1_mat None
 let s2_obj = make_obj (make_sphere sphere2) s2_surf s2_mat None
-let lens_obj = make_obj (make_lens lens1) lens_surf lens_mat (Some (1.5, gray 0.1))
+let lens_obj = make_obj (make_lens lens1) lens_surf lens_mat (Some lens_phys)
 
 (* scene *)
 let cam = (camloc, dir camdir, (0.,1.,0.), d2r 90., d2r 90.)
-let scene = cam, [p1_obj; (*p2_obj; p3_obj; p4_obj;*) s1_obj; s2_obj; lens_obj; light]
+let scene = cam, [
+	p1_obj;
+	(* p2_obj; p3_obj; p4_obj; *)
+	s1_obj; s2_obj;
+	lens_obj; 
+	light
+]
 
 ;;
 

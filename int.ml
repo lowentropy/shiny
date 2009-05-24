@@ -1,5 +1,6 @@
 open Types
 open Math
+open Pp
 
 let plane_vol (n,d) (o,r) =
 	let v = dot n r in
@@ -35,13 +36,13 @@ let int_sphere (c,rad) cull (o,d) =
 	let ll = dot o o in
 	let rr = rad *. rad in
 	let i = ll < rr in
-	if i && cull then None else
+	if (i && cull) then None else
 	(* if pointing away, ray misses *)
 	let tca = -. (dot o d) in
-	if not i && (fneg tca) then None else
+	if ((not i) && (fneg tca)) then None else
 	(* if dist > radius, ray misses *)
 	let t2hc = rr -. ll +. (tca *. tca) in
-	if not i && (not (fpos t2hc)) then None else
+	if ((not i) && (not (fpos t2hc))) then None else
 	(* find both intersection points *)
 	let thc = sqrt t2hc in
 	let t1 = tca -. thc in
@@ -69,5 +70,19 @@ let int_lens (c,n,r,l) cull (o,d) =
 		if cull then None else
 		let s = if (dot n d) > 0. then sl else sr in
 		int_sphere s false (o,d)) else
-	let s = if (dot (o -^ c) n) > 0. then sl else sr in
-	int_sphere s true (o,d)
+	let s1, q1, s2, q2 =
+		if (dot (o -^ c) n) > 0.
+			then (sl,cr,sr,cl)
+			else (sr,cl,sl,cr) in
+	let result = match int_sphere s1 true (o,d) with
+		None -> (
+			match int_sphere s2 true (o,d) with
+				None -> None
+			  | Some (t,n,p) -> Some (q2,t,n,p))
+	  | Some (t,n,p) -> Some (q1,t,n,p) in
+	match result with
+		None -> None
+	  | Some (q,t,n,p) ->
+	let qd = q -^ p in
+	let qq = dot qd qd in
+	if qq < rr then Some (t,n,p) else None

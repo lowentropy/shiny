@@ -83,7 +83,7 @@ let reflect v n = v -^ n *^ (2. *. (dot v n))
 (* miscellaneous *)
 let vsum lst = List.fold_left (+^) zv lst
 let ray_at (o,d) t = o +^ d *^ t
-let lift o d = (ray_at (o,d) (ftol *. 100.)), d
+let lift o d = (ray_at (o,d) ftol), d
 let pi = 3.14159265358979323
 let twopi = pi *. 2.
 let d2r d = d *. pi /. 180.
