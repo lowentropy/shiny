@@ -17,6 +17,17 @@ let int_plane (n,d) cull (o,r) =
 	if t < 0. then None else
 	Some (t, n, ray_at (o,r) t)
 
+(* axis-bounded plane *)
+let abplane_vol (p,_,_) r = plane_vol p r
+
+let int_abplane (plane,min,max) _ r =
+	match int_plane plane false r with
+		None -> None
+	  | Some (t,n,p) ->
+	if (p <^ min) || (p >^ max)
+		then None
+		else Some (t,n,p)
+
 (* sphere bounding-volume *)
 let sphere_vol (c,rad) (o,d) =
 	let o = o -^ c in

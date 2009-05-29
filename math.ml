@@ -50,6 +50,10 @@ let ( ^^) (a,b,c) (d,e,f) =
 	 c *. d -. a *. f,
 	 a *. e -. b *. d)
 let stp a b c = dot a (b ^^ c)
+let ( <^ ) (x1,y1,z1) (x2,y2,z2) =
+	(x1 < x2) || (y1 < y2) || (z1 < z2)
+let ( >^ ) (x1,y1,z1) (x2,y2,z2) =
+	(x1 > x2) || (y1 > y2) || (z1 > z2)
 
 (* basic matrix math *)
 let ( +|) a b = mmap2 a b (+.)
