@@ -16,12 +16,12 @@ let fmax a b = if a > b then a else b
 (* vector mapping *)
 let vmap (x,y,z) f = (f x, f y, f z)
 let vmap2 (a,b,c) (d,e,g) f = (f a d, f b e, f c g)
-let vtot (x,y,z) = x +. y +. z
+let vtrace (x,y,z) = x +. y +. z
 
 (* vector member access *)
-let vx (x,y,z) = x
-let vy (x,y,z) = y
-let vz (x,y,z) = z
+let vx (x,_,_) = x
+let vy (_,y,_) = y
+let vz (_,_,z) = z
 let vi (x,y,z) i = match i with
 	0 -> x | 1 -> y | 2 -> z |
 	_ -> raise IllegalAxis
@@ -39,13 +39,13 @@ let c2 m = vmap m vy
 let c3 m = vmap m vz
 
 (* basic vector math *)
-let ( +^) a b = vmap2 a b (+.)
-let ( -^) a b = vmap2 a b (-.)
-let ( *^) v s = vmap v (( *.) s)
-let ( /^) v s = v *^ (1. /. s)
-let dot a b = vtot (vmap2 a b ( *.))
-let dotp a b = fmax 0.0 (dot a b)
-let ( ^^) (a,b,c) (d,e,f) =
+let ( +^ ) a b = vmap2 a b (+.)
+let ( -^ ) a b = vmap2 a b (-.)
+let ( *^ ) v s = vmap v (( *.) s)
+let ( /^ ) v s = v *^ (1. /. s)
+let dot a b = vtrace (vmap2 a b ( *.))
+let dotp a b = max 0.0 (dot a b)
+let ( ^^ ) (a,b,c) (d,e,f) =
 	(b *. f -. c *. e,
 	 c *. d -. a *. f,
 	 a *. e -. b *. d)
@@ -56,11 +56,13 @@ let ( >^ ) (x1,y1,z1) (x2,y2,z2) =
 	(x1 > x2) || (y1 > y2) || (z1 > z2)
 
 (* basic matrix math *)
-let ( +|) a b = mmap2 a b (+.)
-let ( -|) a b = mmap2 a b (-.)
-let ( *|) m s = mmap m (( *.) s)
-let ( /|) m s = m *| (1. /. s)
+let ( +| ) a b = mmap2 a b (+.)
+let ( -| ) a b = mmap2 a b (-.)
+let ( *| ) m s = mmap m (( *.) s)
+let ( /| ) m s = m *| (1. /. s)
 let tr m = (c1 m, c2 m, c3 m)
+let mdiag m = (vx (r1 m), vy (r2 m), vz (r3 m))
+let mtrace m = vtrace (mdiag m)
 
 (* vector/matrix math *)
 let mv m v = vmap m (dot v)

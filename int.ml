@@ -6,7 +6,7 @@ let plane_vol (n,d) (o,r) =
 	let v = dot n r in
 	if fzero v then false else
 	let t = -. (d +. (dot n o)) /. v in
-	if t < 0. then false else true
+	t >= 0.
 
 (* ray-plane intersection *)
 let int_plane (n,d) cull (o,r) =
@@ -20,6 +20,7 @@ let int_plane (n,d) cull (o,r) =
 (* axis-bounded plane *)
 let abplane_vol (p,_,_) r = plane_vol p r
 
+(* intersect axis-bounded plane *)
 let int_abplane (plane,min,max) _ r =
 	match int_plane plane false r with
 		None -> None
@@ -64,9 +65,13 @@ let int_sphere (c,rad) cull (o,d) =
 	let n = p /^ rad in
 	Some (t, n, p +^ c)
 
+(* fake a lens volume with its bounding sphere *)
 let lens_vol (c,n,r,l) (o,d) = sphere_vol (c,r) (o,d)
 
-let int_lens (c,n,r,l) cull (o,d) =
+(* R = (r^2 + (1/4) w^2) / w *)
+let int_lens (c,n,r,w) cull (o,d) =
+	let r = ((r*.r) +. ((w*.w) /. 4.)) /. w in
+	let l = w /. 2. in
 	let rr = r *. r in
 	let f = n *^ (r -. l) in
 	let cr = c +^ f in

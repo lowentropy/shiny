@@ -52,82 +52,121 @@ let jitter_ray (o, d) j =
 	let yo = (Random.float j) *. 2. -. j in
 	(o, dir (d +^ (r1 *^ xo) +^ (r2 *^ yo)))
 
-let direct_light p n e entities samples surface material =
-	let (ambient, _, _) = material in
-	List.fold_left (fun sum (_,sample,color) ->
-		let samples = sample samples in
-		let num = List.length samples in
-		let sampled = List.fold_left (fun total point ->
-			let diff = point -^ p in
-			let dist = mag diff in
-			let dir = diff /^ dist in
-			let ray = jitter_ray (lift p dir) 0.0 in
-			if hits_before ray entities dist then black else
-			let mult = phong surface material n e dir in
-			total +^ (combine color mult)
-		) black samples in
-		sum +^ (sampled /^ (float num))
-	) ambient (lights entities)
+(*
+	modifications:
+
+	- for area lights, must know surface normal of sample point
+	- multiply fresnel by two cosine terms: for the surface, and for the light
+	- divide fresnel by distance squared
+
+*)
+
+let direct_light p n e entities samples reflector =
+  List.fold_left (fun sum (_,sampler,(color,factor)) ->
+    let color = color *^ factor in
+    let samples = sampler samples in
+    let num = List.length samples in
+    let sampled = List.fold_left (fun total point ->
+      let diff = point -^ p in
+      let dist = mag diff in
+      let dir = diff /^ dist in
+      let ray = jitter_ray (lift p dir) 0.0 in
+      if hits_before ray entities dist then black else
+      let mult = reflector (zv -^ dir) n e in
+      total +^ (combine color mult)
+    ) black samples in
+    sum +^ (sampled /^ (float num))
+  ) zv (lights entities)
 
 let refract p n e n1 n2 =
-	let c1 = -. (dot n e) in
-	let r = n1 /. n2 in
-	let s = 1. -. r *. r *. (1. -. c1 *. c1) in
-	if s < 0. then None else
-	let c2 = sqrt s in
-	let c2 = if c1 > 0. then -. c2 else c2 in
-	let d = (e *^ r) +^ (n *^ (r *. c1 +. c2)) in
-	Some (lift p d)
+  let c1 = -.(dot n e) in
+  let r = n1 /. n2 in
+  let s = 1. -. r *. r *. (1. -. c1 *. c1) in
+  if s < 0. then None else
+  let c2 = sqrt s in
+  let c2 = if c1 > 0. then -. c2 else c2 in
+  let d = (e *^ r) +^ (n *^ (r *. c1 +. c2)) in
+  Some (lift p d)
 
 let rec trace ray entities n1 importance =
-	match intersect ray entities with
-		None -> zv | Some (ent, (t,n,p)) ->
-	let o, d = ray in
-	match ent with
-		Light (_, _, color) -> color
-	  | Object (shape, surface, material, physics) ->
-	let kd, ks, _, kr1, kr2 = surface in
-	let direct = if ((kd > 0.) || (ks > 0.))
-		then direct_light p n (zv-^d) entities 100 surface material
-		else black in
-	let refracted = (
-		(* grab internal physics *)
-		match physics with
-			None -> black
-		  |	Some (n2, absorb) ->
-		(* black if unimportant *)
-		let importance = kr2 *. importance in
-		if importance < 0.2 then black else
-		(* refract from outer -> inner *)
-		match refract p n d n1 n2 with
-			None -> black (* total internal reflection *)
-		  | Some (o,d) ->
-		(* find ray exit point *)
-		let _, intersect = shape in
-		match intersect false (o,d) with
-			None -> raise FunkySolid
-		  | Some (t,n,p) ->
-		(* refract from inner -> outer *)
-		match refract p (zv-^n) d n2 n1 with
-			None -> black (* total internal reflection *)
-		  | Some ray ->
-		(* find next intersection *)
-		let color = trace ray entities n1 importance in
-		let mult = vmap absorb (fun x -> exp (-. t *. x)) in
-		(combine color mult) *^ kr2) in
-	let reflected = (
-		let importance = kr1 *. importance in
-		if importance < 0.2 then black else
-		let ray = lift p (reflect d n) in
-		let color = trace ray entities n1 importance in
-		color *^ kr1) in
-	direct +^ refracted +^ reflected
+
+  (* intersect the ray with the scene*)
+  match intersect ray entities with
+    None -> zv | Some (ent, (t,n,p)) ->
+
+  (* if the ray hits a light, just use the light color *)
+  let o, d = ray in
+  match ent with
+      Light (_, _, (color,_)) -> color
+    | Object (shape, surface, substance) ->
+  let emission, absorption, reflection = surface in
+
+  (* get the contribution from direct light sources *)
+  let direct =
+    direct_light p n (zv -^ d) entities 100 reflection in
+
+  (* refract light into the object*)
+  let (refracted, kr2) = (
+
+    (* if the object doesn't have substance, it's internally black *)
+    match substance with
+        None -> (black, 0.0)
+      |	Some ((abs_color, abs_index), n2) ->
+
+    (* refract from outer -> inner *)
+    match refract p n d n1 n2 with
+        None -> (black, 0.0) (* total internal reflection *)
+      | Some (o2, d2) ->
+    let kr1, kr2 = fresnel_coeff d n d2 n1 n2 in
+
+    (* black if unimportant *)
+    let importance = kr2 *. importance in
+    if importance < 0.2 then (black, kr2) else
+
+    (* find ray exit point *)
+    let _, intersect = shape in
+    match intersect false (o2, d2) with
+        None -> raise FunkySolid
+      | Some (t, n, p2) ->
+
+    (* refract from inner -> outer *)
+    match refract p2 (zv -^ n) d2 n2 n1 with
+        None -> (black, 0.0) (* total internal reflection *)
+      | Some ray ->
+
+    (* find next intersection *)
+    let color = trace ray entities n1 importance in
+    let mult = vmap abs_color (fun x -> exp (-. t *. (x *. abs_index)) *. kr2) in
+    ((combine color mult), kr2)) in
+
+  (* reflected color *)
+  let reflected = (
+    let kr1 = 1. -. kr2 in
+    let importance = kr1 *. importance in
+    if importance < 0.2 then black else
+    let l = reflect d n in
+    let ray = lift p l in
+    let color = trace ray entities n1 importance in
+    let factor = reflection (zv -^ l) n (zv -^ d) in
+    (combine color factor) *^ kr1) in
+    
+  (* emitted color *)
+  let (em_color, em_factor) = emission in
+  let angle = dotp n (zv -^ d) in
+  let emitted = em_color *^ (em_factor *. angle) in
+
+  (* combine then absorb some *)
+  let (abs_color, abs_factor) = absorption in
+  let incoming = direct +^ refracted +^ reflected in
+  let release = white -^ (abs_color *^ abs_factor) in
+  let outgoing = emitted +^ (combine release incoming) in
+  outgoing
 
 let jitter x j = x +. Random.float (j *. 2.) -. j
 
 let draw_scene ?(j=0.0) scene w h x y =
-	let camera, entities = scene in
-	let px = (jitter (float x) j) /. (float (w - 1)) in
-	let py = (jitter (float y) j) /. (float (h - 1)) in
-	let eye = shoot camera px py in
-	trace eye entities 1.0 1.0
+  let camera, entities = scene in
+  let px = (jitter (float x) j) /. (float (w - 1)) in
+  let py = (jitter (float y) j) /. (float (h - 1)) in
+  let eye = shoot camera px py in
+  trace eye entities 1.0 1.0

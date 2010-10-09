@@ -7,6 +7,9 @@ type matrix = vec * vec * vec
 (* color: red, green, blue *)
 type color = vec
 
+(* light energy: color, factor *)
+type energy = color * float
+
 (* ray: origin, direction *)
 type ray = vec * vec
 
@@ -25,38 +28,38 @@ type intersect = bool -> ray -> hit option
 (* bounding volume function: incoming ray -> intersects *)
 type bound = ray -> bool
 
-(* surface properties: diffusivity, specularity, shininess, reflectivity, refractivity *)
-type surface = float * float * float * float * float
-
-(* physical properties: refraction index, absorption *)
-type physics = float * color
-
-(* material properties: ambient, diffuse, specular *)
-type material = color * color * color
+(* material: light direction -> surface normal -> eye direction -> multiplier *)
+type reflector = vec -> vec -> vec -> color
 
 (* shape: bounding volume, intersection function *)
 type shape = bound * intersect
 
+(* surface: emissivity, absorption, reflection function *)
+type surface = energy * energy * reflector
+
+(* substance: absorption color, refractive index *)
+type substance = energy * float
+
 (* object: shape, surface properties, physics *)
-type obj = shape * surface * material * physics option
+type obj = shape * surface * substance option
 
 (* sphere: location, radius *)
 type sphere = vec * float
 
-(* spherical lens: center, facing normal, radius, half-width *)
+(* spherical lens: center, facing normal, facing radius, thickness *)
 type lens = vec * vec * float * float
 
 (* axis-aligned bounding box: minimum and maximum coords *)
 type aabb = vec * vec
 
 (* plane: normal, D-value *)
-type plane = vec * float 
+type plane = vec * float
 
 (* surface sampler: num samples -> point list *)
 type sampler = int -> vec list
 
-(* light: shape, surface sampler, color *)
-type light = shape * sampler * color
+(* light: shape, surface sampler, energy *)
+type light = shape * sampler * energy
 
 (* entity: either an object or a light *)
 type entity = Object of obj | Light of light
@@ -71,5 +74,5 @@ exception FunkySolid
 
 let shape_of entity =
 	match entity with
-		Object (s,_,_,_) -> s
-	  | Light (s,_,_) -> s
+		Object (s,_,_) -> s
+	| Light (s,_,_) -> s

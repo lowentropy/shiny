@@ -11,17 +11,19 @@ TESTS=
 # The list of object files for 
 CMXS=types.cmx consts.cmx math.cmx pp.cmx shaders.cmx trace.cmx draw.cmx int.cmx
 CMOS=types.cmo consts.cmo math.cmo pp.cmo shaders.cmo trace.cmo draw.cmo int.cmo
+LIB_CMA=graphics.cma
+LIB_CMXA=graphics.cmxa
 
 all: opt
 again: clean all
 com: $(CMOS) $(PROGRAM).cmo
-	$(OCAMLC) $(OCAMLFLAGS) -o $(PROGRAM) graphics.cma $(CMOS) $(PROGRAM).cmo
+	$(OCAMLC) $(OCAMLFLAGS) -o $(PROGRAM) $(LIB_CMA) $(CMOS) $(PROGRAM).cmo
 opt: $(CMXS) $(PROGRAM).cmx
-	$(OCAMLOPT) $(OCAMLFLAGS) -o $(PROGRAM) graphics.cmxa $(CMXS) $(PROGRAM).cmx
+	$(OCAMLOPT) $(OCAMLFLAGS) -o $(PROGRAM) $(LIB_CMXA) $(CMXS) $(PROGRAM).cmx
 dbg: $(CMOS) $(PROGRAM).cmo
-	$(OCAMLC) -g $(OCAMLFLAGS) -o $(PROGRAM) graphics.cma $(CMOS) $(PROGRAM).cmo
+	$(OCAMLC) -g $(OCAMLFLAGS) -o $(PROGRAM) $(LIB_CMA) $(CMOS) $(PROGRAM).cmo
 test: $(CMOS) $(TESTS)
-	$(OCAMLC) -g $(OCAMLFLAGS) -o test graphics.cma $(CMOS) $(TESTS)
+	$(OCAMLC) -g $(OCAMLFLAGS) -o test $(LIB_CMA) $(CMOS) $(TESTS)
 
 # Common rules
 .SUFFIXES: .ml .mli .cmo .cmi .cmx

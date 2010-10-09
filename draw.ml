@@ -1,6 +1,7 @@
 open Format
 open Graphics
 open Math
+open Pp
 
 let draw w h f =
 	open_graph (sprintf " %dx%d" w h);
@@ -9,6 +10,6 @@ let draw w h f =
 		let color = f w h x y in
 		let r,g,b = vmap color (fun i ->
 			int_of_float ((fmin i 1.) *. 255.)) in
-		set_color (rgb r g b);
+    set_color (rgb r g b);
 		plot x (h-y-1)
 	done done

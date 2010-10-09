@@ -11,7 +11,7 @@ open Trace
 let make_sphere sphere = (sphere_vol sphere, int_sphere sphere)
 let make_plane plane = (plane_vol plane, int_plane plane)
 let make_lens lens = (lens_vol lens, int_lens lens)
-let make_obj shape surf mat phys = Object (shape,surf,mat,phys)
+let make_obj shape (*surf*) mat phys = Object (shape,(*surf,*)mat,phys)
 
 (* shapes *)
 let plane1  = ( 0.0,  1.0,  0.0),  0.0
@@ -38,31 +38,38 @@ let light = Light (
 	ghost,
 	(fun n -> n_of n (fun () ->
 		(Random.float 4.0 -. 2., 10.0, Random.float 4.0 -. 2.))),
-	(gray 2.0))
+	(gray 4.0))
 
-(* surfaces *)
+(* surfaces: kd, ks, alpha, ?, ? *)
+(*
 let p1_surf = (0.6 , 0.0,  0.0, 0.0, 0.0)
 let s1_surf = (0.8 , 0.2, 10.0, 0.0, 0.0)
 let s2_surf = (0.0,  0.5, 50.0, 0.8, 0.0)
 let lens_surf = (0.0, 0.5, 50.0, 0.0, 0.8)
+*)
+
+let p1_stuff   = (black, gray 0.6, white, 0.6, 0.0,  0.0)
+let s1_stuff   = (black, red,      red,   0.8, 0.2, 10.0)
+let s2_stuff   = (black, white,    white, 0.0, 0.5, 50.0)
+let lens_stuff = (black, white,    white, 0.0, 0.5, 50.0)
 
 (* materials *)
-let p1_mat = (black, gray 0.6, white)
-let s1_mat = (black, red, white)
-let s2_mat = (black, white, white)
-let lens_mat = (black, white, white)
+let p1_mat =   phong p1_stuff   (* (black, gray 0.6, white) *)
+let s1_mat =   phong s1_stuff   (* (black, red, white)      *)
+let s2_mat =   phong s2_stuff   (* (black, white, white)    *)
+let lens_mat = phong lens_stuff (* (black, white, white)    *)
 
 (* physics *)
 let lens_phys = (1.5, (0.3,0.3,0.1) *^ 70.0)
 
 (* objects *)
-let p1_obj = make_obj (make_plane plane1)   p1_surf p1_mat None
-let p2_obj = make_obj (make_plane plane2)   p1_surf p1_mat None
-let p3_obj = make_obj (make_plane plane3)   p1_surf p1_mat None
-let p4_obj = make_obj (make_plane plane4)   p1_surf p1_mat None
-let s1_obj = make_obj (make_sphere sphere1) s1_surf s1_mat None
-let s2_obj = make_obj (make_sphere sphere2) s2_surf s2_mat None
-let lens_obj = make_obj (make_lens lens1) lens_surf lens_mat (Some lens_phys)
+let p1_obj = make_obj (make_plane plane1)   (*p1_surf*) p1_mat None
+let p2_obj = make_obj (make_plane plane2)   (*p1_surf*) p1_mat None
+let p3_obj = make_obj (make_plane plane3)   (*p1_surf*) p1_mat None
+let p4_obj = make_obj (make_plane plane4)   (*p1_surf*) p1_mat None
+let s1_obj = make_obj (make_sphere sphere1) (*s1_surf*) s1_mat None
+let s2_obj = make_obj (make_sphere sphere2) (*s2_surf*) s2_mat None
+let lens_obj = make_obj (make_lens lens1) (*lens_surf*) lens_mat (Some lens_phys)
 
 (* scene *)
 let cam = (camloc, dir camdir, (0.,1.,0.), d2r 90., d2r 90.)
@@ -77,5 +84,5 @@ let scene = cam, [
 ;;
 
 seed();
-draw 500 500 (draw_scene scene);
+draw 300 300 (draw_scene scene);
 ignore (wait_next_event [Key_pressed])
