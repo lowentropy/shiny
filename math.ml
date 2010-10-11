@@ -95,3 +95,6 @@ let twopi = pi *. 2.
 let d2r d = d *. pi /. 180.
 let r2d r = r *. 180. /. pi
 let combine a b = vmap2 a b ( *. )
+
+let rec make_list n f =
+  let i = n - 1 in if i < 0 then [] else (f i)::(make_list i f)

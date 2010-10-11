@@ -53,12 +53,10 @@ let jitter_ray (o, d) j =
 	(o, dir (d +^ (r1 *^ xo) +^ (r2 *^ yo)))
 
 (*
-	modifications:
-
-	- for area lights, must know surface normal of sample point
-	- multiply fresnel by two cosine terms: for the surface, and for the light
-	- divide fresnel by distance squared
-
+  modifications:
+  - for area lights, must know surface normal of sample point
+  - multiply fresnel by two cosine terms: for the surface, and for the light
+  - divide fresnel by distance squared
 *)
 
 let direct_light p n e entities samples reflector =
@@ -73,7 +71,7 @@ let direct_light p n e entities samples reflector =
       let ray = jitter_ray (lift p dir) 0.0 in
       if hits_before ray entities dist then black else
       let mult = reflector (zv -^ dir) n e in
-      total +^ (combine color mult)
+      total +^ ((combine color mult) /^ (dist *. dist))
     ) black samples in
     sum +^ (sampled /^ (float num))
   ) zv (lights entities)
@@ -88,7 +86,13 @@ let refract p n e n1 n2 =
   let d = (e *^ r) +^ (n *^ (r *. c1 +. c2)) in
   Some (lift p d)
 
-let rec trace ray entities n1 importance =
+let min_importance = 0.2
+let max_depth = 50
+let area_light_samples = 10
+
+let rec trace ray entities n1 importance depth =
+  
+  if depth > max_depth then zv else
 
   (* intersect the ray with the scene*)
   match intersect ray entities with
@@ -118,10 +122,10 @@ let rec trace ray entities n1 importance =
         None -> (black, 0.0) (* total internal reflection *)
       | Some (o2, d2) ->
     let kr1, kr2 = fresnel_coeff d n d2 n1 n2 in
-
+    
     (* black if unimportant *)
     let importance = kr2 *. importance in
-    if importance < 0.2 then (black, kr2) else
+    if importance < min_importance then (black, kr2) else
 
     (* find ray exit point *)
     let _, intersect = shape in
@@ -135,19 +139,19 @@ let rec trace ray entities n1 importance =
       | Some ray ->
 
     (* find next intersection *)
-    let color = trace ray entities n1 importance in
+    let color = trace ray entities n1 importance (depth + 1) in
     let mult = vmap abs_color (fun x -> exp (-. t *. (x *. abs_index)) *. kr2) in
     ((combine color mult), kr2)) in
 
   (* reflected color *)
   let reflected = (
     let kr1 = 1. -. kr2 in
-    let importance = kr1 *. importance in
-    if importance < 0.2 then black else
     let l = reflect d n in
-    let ray = lift p l in
-    let color = trace ray entities n1 importance in
     let factor = reflection (zv -^ l) n (zv -^ d) in
+    let importance = kr1 *. (mag factor) *. importance in
+    if importance < min_importance then black else
+    let ray = lift p l in
+    let color = trace ray entities n1 importance (depth + 1) in
     (combine color factor) *^ kr1) in
     
   (* emitted color *)
@@ -164,9 +168,20 @@ let rec trace ray entities n1 importance =
 
 let jitter x j = x +. Random.float (j *. 2.) -. j
 
-let draw_scene ?(j=0.0) scene w h x y =
+let rec make_list n f =
+  let i = n - 1 in if i < 0 then [] else (f i)::(make_list i f)
+
+let draw_scene j n scene w h x y =
   let camera, entities = scene in
-  let px = (jitter (float x) j) /. (float (w - 1)) in
-  let py = (jitter (float y) j) /. (float (h - 1)) in
-  let eye = shoot camera px py in
-  trace eye entities 1.0 1.0
+  let w = w * n in
+  let h = h * n in
+  let j = j /. (float n) in
+  let colors = make_list (n*n) (fun i ->
+    let b = i / n in
+    let a = i mod n in
+    let px = (jitter (float (x * n + a)) j) /. (float (w - 1)) in
+    let py = (jitter (float (y * n + b)) j) /. (float (h - 1)) in
+    let eye = shoot camera px py in
+    trace eye entities 1.0 1.0 0
+  ) in
+  List.fold_left (fun s c -> s +^ (c /^ (float (n*n)))) zv colors
