@@ -9,6 +9,8 @@ open Shaders
 open Materials
 open Builders
 
+let complexity_view = false
+
 let radius     = 1.0
 let ground     = (0.0,  1.0,  0.0),  0.0
 let camloc     = (0., 5., 5.)
@@ -43,5 +45,6 @@ let scene = cam, objects @ lights
 ;;
 
 seed();
-draw true width height (draw_scene true jitter numrays scene);
+draw complexity_view width height (draw_scene complexity_view jitter numrays scene);
+print_string "Done drawing!\n";
 ignore (wait_next_event [Key_pressed])
