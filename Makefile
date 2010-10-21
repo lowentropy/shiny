@@ -9,8 +9,8 @@ PROGRAM=shiny
 TESTS=
 
 # The list of object files for 
-CMXS=types.cmx consts.cmx math.cmx pp.cmx shaders.cmx trace.cmx draw.cmx int.cmx
-CMOS=types.cmo consts.cmo math.cmo pp.cmo shaders.cmo trace.cmo draw.cmo int.cmo
+CMXS=types.cmx consts.cmx math.cmx pp.cmx shaders.cmx materials.cmx trace.cmx draw.cmx int.cmx builders.cmx 
+CMOS=types.cmo consts.cmo math.cmo pp.cmo shaders.cmo materials.cmo trace.cmo draw.cmo int.cmo builders.cmo 
 LIB_CMA=graphics.cma
 LIB_CMXA=graphics.cmxa
 

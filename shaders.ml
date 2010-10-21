@@ -19,14 +19,18 @@ let lambert diffuse l n (e:vec) =
   let (d, kd) = diffuse in
   d *^ (kd *. (dotp n (zv -^ l)))
 
-let point_light pos color factor = Light (ghost, (fun n -> [pos]), (color, factor))
+let point_light pos color factor = Light (ghost, (fun n -> [(pos,None)]), (color, factor))
 
-let area_light center axis1 axis2 color factor = Light (ghost, (fun n ->
-  make_list n (fun i -> 
-    center +^ (axis1 *^ ((Random.float 2.) -. 1.))
-           +^ (axis2 *^ ((Random.float 2.) -. 1.))
-  )
-), (color, factor))
+let area_light center axis1 axis2 color factor =
+  let norm = Some (dir (axis1 ^^ axis2)) in
+  Light (ghost, (fun n ->
+    make_list n (fun i ->
+      let p = center
+                +^ (axis1 *^ ((Random.float 2.) -. 1.))
+                +^ (axis2 *^ ((Random.float 2.) -. 1.)) in
+      (p, norm)
+    )
+  ), (color, factor))
 
 let fresnel_coeff l n r n1 n2 =
   let cl, cr = -.(dot l n), -.(dot r n) in

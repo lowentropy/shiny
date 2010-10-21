@@ -52,26 +52,20 @@ let jitter_ray (o, d) j =
 	let yo = (Random.float j) *. 2. -. j in
 	(o, dir (d +^ (r1 *^ xo) +^ (r2 *^ yo)))
 
-(*
-  modifications:
-  - for area lights, must know surface normal of sample point
-  - multiply fresnel by two cosine terms: for the surface, and for the light
-  - divide fresnel by distance squared
-*)
-
 let direct_light p n e entities samples reflector =
   List.fold_left (fun sum (_,sampler,(color,factor)) ->
     let color = color *^ factor in
     let samples = sampler samples in
     let num = List.length samples in
-    let sampled = List.fold_left (fun total point ->
+    let sampled = List.fold_left (fun total (point, norm) ->
       let diff = point -^ p in
       let dist = mag diff in
       let dir = diff /^ dist in
       let ray = jitter_ray (lift p dir) 0.0 in
       if hits_before ray entities dist then black else
       let mult = reflector (zv -^ dir) n e in
-      total +^ ((combine color mult) /^ (dist *. dist))
+      let cf = match norm with None -> 1.0 | Some n -> dotp n (zv -^ dir) in
+      total +^ ((combine color mult) *^ (cf /. (dist *. dist)))
     ) black samples in
     sum +^ (sampled /^ (float num))
   ) zv (lights entities)
@@ -88,44 +82,45 @@ let refract p n e n1 n2 =
 
 let min_importance = 0.2
 let max_depth = 50
-let area_light_samples = 20
+let area_light_samples = 100
+
 
 let rec trace ray entities n1 importance depth =
   
-  if depth > max_depth then zv else
+  if depth > max_depth then (zv, 0) else
 
   (* intersect the ray with the scene*)
   match intersect ray entities with
-    None -> zv | Some (ent, (t,n,p)) ->
+    None -> (zv, 1) | Some (ent, (t,n,p)) ->
 
   (* if the ray hits a light, just use the light color *)
   let o, d = ray in
   match ent with
-      Light (_, _, (color,_)) -> color
+      Light (_, _, (color,_)) -> (color, 1)
     | Object (shape, surface, substance) ->
   let emission, absorption, reflection = surface in
 
   (* get the contribution from direct light sources *)
   let direct =
-    direct_light p n (zv -^ d) entities 100 reflection in
+    direct_light p n (zv -^ d) entities area_light_samples reflection in
 
   (* refract light into the object*)
-  let (refracted, kr2) = (
+  let (refracted, kr2, max_depth) = (
 
     (* if the object doesn't have substance, it's internally black *)
     match substance with
-        None -> (black, 0.0)
+        None -> (black, 0.0, 0)
       |	Some ((abs_color, abs_index), n2) ->
 
     (* refract from outer -> inner *)
     match refract p n d n1 n2 with
-        None -> (black, 0.0) (* total internal reflection *)
+        None -> (black, 0.0, 0) (* total internal reflection *)
       | Some (o2, d2) ->
     let kr1, kr2 = fresnel_coeff d n d2 n1 n2 in
     
     (* black if unimportant *)
     let importance = kr2 *. importance in
-    if importance < min_importance then (black, kr2) else
+    if importance < min_importance then (black, kr2, 0) else
 
     (* find ray exit point *)
     let _, intersect = shape in
@@ -135,25 +130,27 @@ let rec trace ray entities n1 importance depth =
 
     (* refract from inner -> outer *)
     match refract p2 (zv -^ n) d2 n2 n1 with
-        None -> (black, 0.0) (* total internal reflection *)
+        None -> (black, 0.0, 0) (* total internal reflection *)
       | Some ray ->
 
     (* find next intersection *)
-    let color = trace ray entities n1 importance (depth + 1) in
+    let (color, max_depth) = trace ray entities n1 importance (depth + 1) in
     let mult = vmap abs_color (fun x -> exp (-. t *. (x *. abs_index)) *. kr2) in
-    ((combine color mult), kr2)) in
+    ((combine color mult), kr2, max_depth)) in
 
   (* reflected color *)
-  let reflected = (
+  let (reflected, max_depth2) = (
     let kr1 = 1. -. kr2 in
     let l = reflect d n in
     let factor = reflection (zv -^ l) n (zv -^ d) in
     let importance = kr1 *. (mag factor) *. importance in
-    if importance < min_importance then black else
+    if importance < min_importance then (black, 0) else
     let ray = lift p l in
-    let color = trace ray entities n1 importance (depth + 1) in
-    (combine color factor) *^ kr1) in
-    
+    let (color, max_depth) = trace ray entities n1 importance (depth + 1) in
+    ((combine color factor) *^ kr1), max_depth) in
+  
+  let max_depth = max_depth + max_depth2 + 1 in
+  
   (* emitted color *)
   let (em_color, em_factor) = emission in
   let angle = dotp n (zv -^ d) in
@@ -164,19 +161,19 @@ let rec trace ray entities n1 importance depth =
   let incoming = direct +^ refracted +^ reflected in
   let release = white -^ (abs_color *^ abs_factor) in
   let outgoing = emitted +^ (combine release incoming) in
-  outgoing
+  (outgoing, max_depth)
 
 let jitter x j = x +. Random.float (j *. 2.) -. j
 
 let rec make_list n f =
   let i = n - 1 in if i < 0 then [] else (f i)::(make_list i f)
 
-let draw_scene j n scene w h x y =
+let draw_scene depth j n scene w h x y =
   let camera, entities = scene in
   let w = w * n in
   let h = h * n in
   let j = j /. (float n) in
-  let colors = make_list (n*n) (fun i ->
+  let results = make_list (n*n) (fun i ->
     let b = i / n in
     let a = i mod n in
     let px = (jitter (float (x * n + a)) j) /. (float (w - 1)) in
@@ -184,4 +181,9 @@ let draw_scene j n scene w h x y =
     let eye = shoot camera px py in
     trace eye entities 1.0 1.0 0
   ) in
-  List.fold_left (fun s c -> s +^ (c /^ (float (n*n)))) zv colors
+  let colors = List.map (fun (c,_) -> c) results in
+  let depths = List.map (fun (_,d) -> d) results in
+  let total_depth = float (List.fold_left (fun i j -> i + j) 0 depths) in
+  if depth
+    then (total_depth, total_depth, total_depth)
+    else List.fold_left (fun s c -> s +^ (c /^ (float (n*n)))) zv colors

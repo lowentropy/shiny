@@ -59,7 +59,7 @@ type aabb = vec * vec
 type plane = vec * float
 
 (* surface sampler: num samples -> point list *)
-type sampler = int -> vec list
+type sampler = int -> (vec * vec option) list
 
 (* light: shape, surface sampler, energy *)
 type light = shape * sampler * energy
