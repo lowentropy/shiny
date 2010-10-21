@@ -98,3 +98,12 @@ let combine a b = vmap2 a b ( *. )
 
 let rec make_list n f =
   let i = n - 1 in if i < 0 then [] else (f i)::(make_list i f)
+  
+let quadratic a b c =
+  let t = b *. b -. 4. *. a *. c in
+  if t < 0. then None else
+  let t = sqrt t in
+  let a2 = a *. 2. in
+  let r1 = (-.b -. t) /. a2 in
+  let r2 = (-.b +. t) /. a2 in
+  Some (r1, r2)

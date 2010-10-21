@@ -88,7 +88,7 @@ let refract p n e n1 n2 =
 
 let min_importance = 0.2
 let max_depth = 50
-let area_light_samples = 10
+let area_light_samples = 20
 
 let rec trace ray entities n1 importance depth =
   

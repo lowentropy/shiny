@@ -17,6 +17,7 @@ let absorptive energy reflect = ((black, 0.), energy,      reflect)
 
 let make_plane plane = (plane_vol plane, int_plane plane)
 let make_sphere sphere = (sphere_vol sphere, int_sphere sphere)
+let make_cyl cyl capped = (cyl_vol cyl, int_cyl cyl capped)
 let make_obj shape surface substance = Object (shape, surface, substance)
 
 (* shapes *)
@@ -37,18 +38,21 @@ let tetrahedron = [
 ]
 let spheres = List.map (fun p -> (p *^ r, r)) tetrahedron
 
+let cyl = ((-1.,0.5,0.),(1.,0.5,0.),0.5)
+
 (* camera *)
-let camloc  = ( r*.4.,  r*.5., r*.7.)
-let camdir  = zv -^ dir (camloc -^ (0., 2.*.r, 0.))
+(*let camloc  = ( r*.4.,  r*.6., r*.7.)*)
+let camloc = (3., 3., 3.)
+let camdir  = zv -^ dir camloc
 
 let spheres = ((camloc /^ 2.) +^ (-1.5,1.,0.5), r /. 2.)::spheres
 
+let r () = Random.float 1.0
+
 (* lights *)
-let lights = [
-  point_light (-10.0, 10.0, 0.0) white 100.0;
-  point_light (5.0, 20.0, 5.0) white 400.0;
-  point_light (7.0, 10.0, -4.0) white 100.0;
-]
+let lights = make_list 10 (fun i ->
+  point_light (r()*.4.-.2.,5.,r()*.4.-.2.) (white -^ (r(),r(),r()) *^ 0.2) 10.0
+)
 
 (* surfaces *)
 let shiny_red = reflective (shiny red white)
@@ -64,15 +68,21 @@ let mirror = reflective (phong (black, 0.0) (white, 1.0) 1000.0)
 let transparent = reflective (dull black)
 
 (* substances *)
-let glass = ((black, 0.0), 1.5)
+let blue_glass = ((white -^ blue, 0.5), 1.5)
+let red_glass = ((white -^ red, 0.5), 1.5)
+let green_glass = ((white -^ green, 0.5), 1.5)
+let clear_glass = ((black, 0.0), 1.5)
+
 
 (* objects *)
 let ground_obj = make_obj (make_plane ground) dull_white None
 let wall1_obj = make_obj (make_plane wall1) mirror None
 let wall2_obj = make_obj (make_plane wall2) mirror None
+
 let [lens;s1;s2;s3;s4] = spheres
+
 let sphere_objs = [
-  make_obj (make_sphere lens) mirror (Some glass);
+  make_obj (make_sphere lens) mirror (Some clear_glass);
   make_obj (make_sphere s1) shiny_red None;
   make_obj (make_sphere s2) shiny_green None;
   make_obj (make_sphere s3) shiny_blue None;
@@ -81,19 +91,23 @@ let sphere_objs = [
 
 let wall_objs = [wall1_obj; wall2_obj]
 
+let cyl_obj = make_obj (make_cyl cyl true) shiny_red None
+
 (* render params *)
-let width = 500
-let height = 500
+let width = 400 (* 1680 *)
+let height = 400 (* 1050 *)
+let jitter = 0.2
+let numrays = 1
 let aspect = (float width) /. (float height)
 let fovy = 2. *. (atan 1.)
 let fovx = 2. *. (atan aspect)
 
 (* scene *)
 let cam = (camloc, dir camdir, (0.,1.,0.), fovx, fovy)
-let scene = cam, [ground_obj] @ wall_objs @ sphere_objs @ lights
+let scene = cam, [ground_obj; cyl_obj] (*@ wall_objs*) (*@ sphere_objs*) @ lights
 
 ;;
 
 seed();
-draw width height (draw_scene 0.2 2 scene);
+draw width height (draw_scene jitter numrays scene);
 ignore (wait_next_event [Key_pressed])

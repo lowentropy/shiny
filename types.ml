@@ -49,6 +49,9 @@ type sphere = vec * float
 (* spherical lens: center, facing normal, facing radius, thickness *)
 type lens = vec * vec * float * float
 
+(* truncated cylinder: axis end, axis end, radius *)
+type cylinder = vec * vec * float
+
 (* axis-aligned bounding box: minimum and maximum coords *)
 type aabb = vec * vec
 

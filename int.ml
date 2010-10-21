@@ -102,3 +102,52 @@ let int_lens (c,n,r,w) cull (o,d) =
 	let qd = q -^ p in
 	let qq = dot qd qd in
 	if qq < rr then Some (t,n,p) else None
+	
+let cyl_vol (a,b,r) (o,d) =
+  let ab = b -^ a in
+  let ao = o -^ a in
+  let aoab = ao ^^ ab in
+  let dab = d ^^ ab in
+  let ab2 = dot ab ab in
+  let qa = dot dab dab in
+  let qb = 2. *. (dot dab aoab) in
+  let qc = (dot aoab aoab) -. (r *. r *. ab2) in
+  match quadratic qa qb qc with
+    None -> false | Some (t1,t2) ->
+  let t = if t1 < 0. then t2 else if t1 < t2 then t1 else t2 in
+  not (fneg t)
+  
+let int_cyl_caps a b r (o,d) cull =
+  let n = dir (a -^ b) in
+  let k = -. (dot n a) in
+  match int_plane (n,k) cull (o,d) with
+    None -> None |
+    Some (t,n,p) ->
+  let d = mag (p -^ a) in
+  if d > r then None else Some (t,n,p)
+
+let int_cyl (a,b,r) capped cull (o,d) =
+  let ab = b -^ a in
+  let ao = o -^ a in
+  let aoab = ao ^^ ab in
+  let dab = d ^^ ab in
+  let ab2 = dot ab ab in
+  let qa = dot dab dab in
+  let qb = 2. *. (dot dab aoab) in
+  let qc = (dot aoab aoab) -. (r *. r *. ab2) in
+  match quadratic qa qb qc with
+    None -> None | Some (t1,t2) ->
+  let inside = t1 < 0. in
+  let t = if inside then t2 else min t1 t2 in
+  if inside && cull then None else
+  if fneg t then None else
+  let p = ray_at (o,d) t in
+  let q = p -^ a in
+  let q = (dot ab q) /. (dot ab ab) in
+  if q < 0. then
+    if capped then int_cyl_caps a b r (o,d) cull else None else
+  if q > 1. then
+    if capped then int_cyl_caps b a r (o,d) cull else None else
+  let q = ab *^ q +^ a in
+  let n = dir (p -^ q) in
+  Some (t,n,p)
