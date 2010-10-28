@@ -7,6 +7,8 @@ open Int
 open Shaders
 open Trace
 
+let complexity_view = true
+
 (* helpers *)
 let shiny diffuse specular = phong (diffuse, 0.5) (specular, 0.5) 1000.
 let dull diffuse = lambert (diffuse, 0.5)
@@ -136,5 +138,5 @@ let scene = cam, [ground_obj] @ cyl_objs @ cube_sphere_objs (*@ wall_objs*) (*@ 
 ;;
 
 seed();
-draw width height (draw_scene jitter numrays scene);
+draw complexity_view width height (draw_scene complexity_view jitter numrays scene);
 ignore (wait_next_event [Key_pressed])

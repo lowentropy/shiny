@@ -64,6 +64,28 @@ let int_sphere (c,rad) cull (o,d) =
 	let p = ray_at (o,d) t in
 	let n = p /^ rad in
 	Some (t, n, p +^ c)
+	
+(* triangle intersection *)
+let int_tri (v0,v1,v2) cull (o',d') =
+  (* get edge vectors and normalizing distance *)
+  let e1, e2 = v1 -^ v0, v2 -^ v0 in
+  let d = stp e1 d' e2 in
+  if fzero d || (cull && d < 0.) then None else
+  (* get u coordinate *)
+  let r = o' -^ v0 in
+  let u = stp r d' e2 in
+  if u < 0. || u > d then None else
+  (* get v coordinate *)
+  let q = r ^^ e1 in
+  let v = dot d' q in
+  if v < 0. || u +. v > d then None else
+  (* get t and return *)
+  let t = (dot e2 q) /. d in
+  let n = dir (e1 ^^ e2) in
+  Some (t, n, ray_at (o',d') t)
+
+let tri_vol t r =
+  match int_tri t false r with None -> false | _ -> true
 
 (* fake a lens volume with its bounding sphere *)
 let lens_vol (c,n,r,l) (o,d) = sphere_vol (c,r) (o,d)

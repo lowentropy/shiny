@@ -35,5 +35,5 @@ let draw normalize w h f =
       let r,g,b = vmap color (fun i ->
         int_of_float ((fmin i 1.) *. 255.)) in
       set_color (rgb r g b);
-      plot (h-y-1)
+      plot x (h-y-1)
     done done)

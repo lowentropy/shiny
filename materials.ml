@@ -17,6 +17,7 @@ let shiny_white = reflective (shiny white white)
 let dull_white = absorptive (white, 0.5) (dull white)
 let dull_red = emissive (red, 1.0) (dull black)
 let dull_green = absorptive (white, 0.5) (dull green)
+let dull_blue = absorptive (white, 0.5) (dull blue)
 
 let mirror = reflective (phong (black, 0.0) (white, 1.0) 1000.0)
 let transparent = reflective (dull black)
