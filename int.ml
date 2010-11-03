@@ -64,25 +64,38 @@ let int_sphere (c,rad) cull (o,d) =
 	let p = ray_at (o,d) t in
 	let n = p /^ rad in
 	Some (t, n, p +^ c)
+
+let sphere_uv (c,r) p =
+  let x, y, z = dir (p -^ c) in
+  let u = (atan2 x z) /. pi in
+  let u = if u < 0. then 2.-.u else u in
+  let u = u /. 2. in
+  let v = (asin y) /. pi +. 0.5 in
+  (u, v)
 	
 (* triangle intersection *)
-let int_tri (v0,v1,v2) cull (o',d') =
+let int_tri (v0,v1,v2) cull (o,d) =
   (* get edge vectors and normalizing distance *)
-  let e1, e2 = v1 -^ v0, v2 -^ v0 in
-  let d = stp e1 d' e2 in
-  if fzero d || (cull && d < 0.) then None else
+  let e1 = v1 -^ v0 in
+  let e2 = v2 -^ v0 in
+  let s1 = d ^^ e2 in
+  let m = dot e1 s1 in 
+  if fzero m || (cull && m < 0.) then None else
+  let m = 1. /. m in
   (* get u coordinate *)
-  let r = o' -^ v0 in
-  let u = stp r d' e2 in
-  if u < 0. || u > d then None else
+  let r = o -^ v0 in
+  let u = m *. (dot r s1) in
+  if u < 0. || u > 1. then None else
   (* get v coordinate *)
-  let q = r ^^ e1 in
-  let v = dot d' q in
-  if v < 0. || u +. v > d then None else
+  let s2 = r ^^ e1 in
+  let v = m *. (dot d s2) in
+  if v < 0. || (u +. v) > 1. then None else
   (* get t and return *)
-  let t = (dot e2 q) /. d in
+  let t = m *. (dot e2 s2) in
+  if t < 0. then None else
+  let p = ray_at (o,d) t in
   let n = dir (e1 ^^ e2) in
-  Some (t, n, ray_at (o',d') t)
+  Some (t, n, p)
 
 let tri_vol t r =
   match int_tri t false r with None -> false | _ -> true

@@ -34,9 +34,6 @@ type reflector = vec -> vec -> vec -> color
 (* shape: bounding volume, intersection function *)
 type shape = bound * intersect
 
-(* parameterized surface: (u,v) -> (p, n) *)
-type paramsurf = float * float -> vec * vec
-
 (* surface: emissivity, absorption, reflection function *)
 type surface = energy * energy * reflector
 

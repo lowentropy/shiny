@@ -14,10 +14,12 @@ pp.cmo: math.cmo
 pp.cmx: math.cmx
 shaders.cmo: types.cmo math.cmo consts.cmo
 shaders.cmx: types.cmx math.cmx consts.cmx
-shiny.cmo: types.cmo trace.cmo shaders.cmo math.cmo materials.cmo int.cmo \
-    draw.cmo consts.cmo builders.cmo
-shiny.cmx: types.cmx trace.cmx shaders.cmx math.cmx materials.cmx int.cmx \
-    draw.cmx consts.cmx builders.cmx
+shiny.cmo: types.cmo trace.cmo subdivide.cmo shaders.cmo math.cmo \
+    materials.cmo int.cmo draw.cmo consts.cmo builders.cmo
+shiny.cmx: types.cmx trace.cmx subdivide.cmx shaders.cmx math.cmx \
+    materials.cmx int.cmx draw.cmx consts.cmx builders.cmx
+subdivide.cmo: math.cmo builders.cmo
+subdivide.cmx: math.cmx builders.cmx
 trace.cmo: types.cmo shaders.cmo pp.cmo math.cmo consts.cmo
 trace.cmx: types.cmx shaders.cmx pp.cmx math.cmx consts.cmx
 types.cmo:

@@ -1,28 +1,6 @@
-let icosahedron_tris =
-  let phi = (1. +. (sqrt 5.)) /. 2. in
-  let a, b = 1.0, phi in
-  let r = (sqrt (1 +. (phi *. phi))) /. 2. in
-  let a, b = a /. r, b /. r in
-
-  let points = [|
-     0., -.a, -.b;  0.,   a, -.b;  0.,   a,   b;   0., -.a,   b;
-    -.b,  0.,   a;   b,  0.,   a;   b,  0., -.a;  -.b,  0., -.a;
-    -.a, -.b,  0.;   a, -.b,  0.;   a,   b,  0.;  -.a,   b,  0.;
-  |] in
-
-  let tris = [
-    1, 2, 10;  1, 11, 2;   0, 9, 3;   3, 8, 0;
-    5, 11, 8;  11, 4, 8;  9, 10, 6;  9, 7, 10;
-     5, 6, 2;   5, 3, 6;   4, 1, 7;   7, 0, 4;
-    5, 2, 11;  6, 10, 2;  10, 7, 1;  1, 4, 11;
-     5, 8, 3;   6, 3, 9;   0, 7, 9;   8, 4, 0;
-  ] in
-
-  List.map (fun (a,b,c) ->
-    ( Array.get points a,
-      Array.get points b,
-      Array.get points c )
-  ) tris
+open Types
+open Builders
+open Math
 
 let sphere_uv p =
   let x,y,z = dir p in
@@ -33,22 +11,29 @@ let sphere_uv p =
   (u, v)
 
 let rec subdivide_sphere (o,r) (a,b,c) levels =
+  let (a,b,c) = vmap (a,b,c) dir in
+  let t = vmap (a,b,c) (fun x -> x *^ r +^ o) in
+  let uv = vmap (a,b,c) sphere_uv in
   if levels == 0
-    then ((a,b,c), []) else
+    then (t, uv, []) else
   let edge_point a b =
     dir ((a +^ b) /^ 2.) in
   let levels = levels - 1 in
   let u = edge_point a b in
   let v = edge_point b c in
   let w = edge_point c a in
-  (vmap (fun x -> x *^ r +^ o) (a,b,c)),
-  ( sphere_uv a,
-    sphere_uv b,
-    sphere_uv c ),
-  [ subdivide_sphere (u, v, w) levels;
-    subdivide_sphere (a, u, w) levels;
-    subdivide_sphere (b, v, u) levels;
-    subdivide_sphere (c, w, v) levels;
-  ]
+  ( t, uv,
+    [ subdivide_sphere (o,r) (u,v,w) levels;
+      subdivide_sphere (o,r) (a,u,w) levels;
+      subdivide_sphere (o,r) (b,v,u) levels;
+      subdivide_sphere (o,r) (c,w,v) levels;
+  ])
 
 let make_sphere_tree (c,r) n = List.map (fun t -> subdivide_sphere (c,r) t n) icosahedron_tris
+
+let rec flatten_subdivision_tree lst all =
+  List.fold_left (fun p (t,_,sub) ->
+    match sub with [] -> t::p | _ -> (flatten_subdivision_tree sub p)
+  ) all lst
+
+let subdivided_sphere_tris (c,r) n = flatten_subdivision_tree (make_sphere_tree (c,r) n) []
